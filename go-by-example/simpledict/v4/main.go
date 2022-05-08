@@ -88,9 +88,11 @@ func query(word string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//防御性编程
 	if resp.StatusCode != 200 {
 		log.Fatal("bad StatusCode:", resp.StatusCode, "body", string(bodyText))
 	}
+	
 	var dictResponse DictResponse
 	err = json.Unmarshal(bodyText, &dictResponse)
 	if err != nil {
