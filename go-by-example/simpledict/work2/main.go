@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 )
 
 type DictRequestVolc struct{
@@ -86,7 +87,7 @@ type DictResponse struct {
 	} `json:"dictionary"`
 }
 
-func querryVolc(word string) {
+func queryVolc(word string, wp *sync.WaitGroup) {
 	client := &http.Client{}
 	//var data = strings.NewReader(`{"text":"god","language":"en"}`)
 	request := DictRequestVolc{Language: "en", Text: word}
@@ -130,6 +131,7 @@ func querryVolc(word string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Volc translation is")
 	//fmt.Println(word, "UK:", dictResponseVolc.Dictionary.Prons.En, "US:", dictResponseVolc.Dictionary.Prons.EnUs)
 	for _, word := range dictResponseVolc.Words {
 		for _,poslist := range word.PosList {
@@ -139,11 +141,11 @@ func querryVolc(word string) {
 			
 		}
 	}
-
+	wp.Done()
 }
 
 
-func query(word string) {
+func query(word string, wp *sync.WaitGroup) {
 	client := &http.Client{}
 	request := DictRequest{TransType: "en2zh", Source: word}
 	buf, err := json.Marshal(request)
@@ -192,10 +194,12 @@ func query(word string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Canyun translation is")
 	fmt.Println(word, "UK:", dictResponse.Dictionary.Prons.En, "US:", dictResponse.Dictionary.Prons.EnUs)
 	for _, item := range dictResponse.Dictionary.Explanations {
 		fmt.Println(item)
 	}
+	wp.Done()
 }
 
 func main() {
@@ -206,5 +210,10 @@ example: simpleDict hello
 		os.Exit(1)
 	}
 	word := os.Args[1]
-	querryVolc(word)
+	wp := sync.WaitGroup{}
+	wp.Add(2)
+	go queryVolc(word, &wp)
+	go query(word, &wp)
+	wp.Wait()
+	
 }
